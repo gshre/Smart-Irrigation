@@ -1,0 +1,373 @@
+<script type="text/javascript" src="https://code.jquery.com/jquery-3.2.0.min.js"></script>
+</script>
+<link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@300&display=swap" rel="stylesheet">
+<script type="text/javascript">
+    var webSocket;
+    var last_time="00:00";
+    $(document).ready(function(){
+    var web_socket="ws://192.168.0.108:8765/client";    
+    webSocket = new WebSocket(web_socket);
+    var val1,val2;
+    val1=false;
+    val2=false;
+    webSocket.onopen = function(){
+    try{
+        webSocket.send("0");
+    } catch(exception){
+   	    alert("error")
+    }
+    }
+   
+    webSocket.onmessage = function(msg){
+	    msg=msg.data;
+        console.log("Recieved"+msg);
+        var arr=msg.split(' ');
+        var i;
+        if(arr[0]==1){
+            for(i=1;i<arr.length;i+=1){
+                console.log(arr[i],i)
+                    applist(arr[i]);            
+            }
+        }
+        if (arr[0]==2){
+            document.getElementById("Sprnk").value=arr[1]
+            document.getElementById("Drip").value=arr[2]
+        }
+        if (arr[0]==3){
+            if (arr[1]==1){
+                console.log("valve open");
+                document.getElementById("update").innerHTML=arr[4];
+                if(arr[2]==0){
+                    if (arr[3]==0){
+                    val1=false;
+                    document.getElementById("valve1").style.border = "thick solid #000000"; 
+                    }else{
+                        val1=true;
+                    document.getElementById("valve1").style.border = "thick solid #0000FF";
+                    }
+                }
+                if(arr[2]==2){
+                    if(arr[3]==0){
+                        val2=false;
+                        document.getElementById("valve2").style.border = "thick solid #000000"; 
+                    }else{
+                        val2=true;
+                    document.getElementById("valve2").style.border = "thick solid #0000FF"; 
+                    }
+                }
+            }
+            if (arr[1]==2){
+                console.log("Executing Timer")
+                console.log(arr[2])
+                if(arr[2]!="00:00"){
+                document.getElementById(arr[2]).style.border = "thin solid #0000FF"; 
+                last_time=arr[2];
+                }
+                else if(last_time!="00:00")
+                {document.getElementById(last_time).style.border = "thin solid #000000";
+                 last_time="00:00";
+                } 
+            }
+           
+        }
+        if (arr[0]==4)
+            document.getElementById("time").style.color="#3cdc14";
+    }
+
+    $("button1").click(function(){
+        var out;
+        console.log(val1)
+        if(val1==true){
+           $("button1").css("background-color","#222");
+           out="1 0";
+           val1=false;
+        }
+        else{
+            $("button1").css("background-color","#ddd");
+            out="1 1";
+            val1=true;
+        }
+        try{
+            webSocket.send("4 "+out);
+        } catch(exception){
+            alert("error")
+        }
+        
+    });
+    $("button2").click(function(){
+        var out;
+        console.log(val2)
+        if(val2==true){
+           $("button2").css("background-color","#222");
+           out="2 0";
+           val2=false;
+        }
+        else{
+            $("button2").css("background-color","#ddd");
+            out="2 1";
+            val2=true;
+        }
+  
+        try{
+            webSocket.send("4 "+out);
+        } catch(exception){
+            alert("error")
+        }
+    });
+    $(".submit").click(function(){
+        var startTime = document.getElementById("time");
+        var time =startTime.value;
+        var response;
+        console.log(time);
+        try{
+            if (time.length>1)
+            webSocket.send("1 "+time);
+        } catch(exception){
+            alert("error")
+        }
+    });
+    $(".reset").click(function(){
+        try{
+            webSocket.send("5");
+        }
+        catch{
+            alert("Error");
+        }
+    });
+    $(document).on('click',".remove",function () {     
+        var time =this.id;
+        time=time.substring(0,5);
+        $(this).parent().remove();
+        console.log(time);
+        try{
+            webSocket.send("2 "+time);
+        } catch(exception){
+            alert("error")
+        }
+        
+    });
+    function applist(Time){
+        console.log(Time);
+        if(Time!=="")
+            $(".Vertical").append("<div class=\"list\"id="+Time+"><h1 class=\"list_item\">"+Time+"</h1><button class=\"remove\" id="+Time+"_but>Remove</button>");
+    }
+    function status_update(Data){
+
+    }
+    $('#Sprnk').change(function(){
+        var time =document.getElementById("Sprnk");
+        console.log(time.value);
+        if(time.value>15)
+            time.value=15;
+        webSocket.send("3 1 "+time.value);
+    });
+    $('#Drip').change(function(){
+        var time =document.getElementById("Drip");
+        console.log(time.value);
+        if(time.value>15)
+            time.value=15;
+        webSocket.send("3 2 "+time.value);
+    });
+    });
+</script>
+<style>
+    .valve{
+        display: block;
+        background-color: #222;
+        background-image: url("pump.png");
+        background-position: center;
+        background-size: 50%;
+        background-repeat: no-repeat;
+        height:20em;
+        width: 20em;
+        border-radius: 40px 40px 40px 40px;
+        border:thick solid;
+        border-color: #000000;
+    }
+    
+    .Horizontal{
+        padding-bottom: 5%;
+        width: 100%;
+        height:40%;
+        display:flex;
+        flex-direction: row;
+        justify-content: space-around;
+        border: solid;
+        border-width: 0px;
+        border-bottom-width:1px;
+    }
+    .Vertical{
+        margin-top: 2vw;
+        display: flex;
+        flex-direction: column;
+        width: 100%;
+        max-height: fit-content;
+        min-height: 60%;
+        border: solid;
+        border: 0px;
+        border-top: 10px;
+        border-color: cornsilk;
+
+    }
+    .body{
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-around;
+        background-color: #000000;
+        padding: 0;
+        margin:0;
+        height: 100vh;
+    }
+    .list{
+        position: relative;
+        display: flex;
+        width:100%;
+        height:10em;
+        border:thin solid;
+        border-color: #000000;
+        justify-content: center;
+        border-radius: 30px 30px 30px 30px;
+        background-color: #222;
+        color: cornsilk;
+        margin: auto;
+        margin-bottom: 2%;
+        margin-top: 0%;
+        padding-top: 0%;
+    }
+    .list_item{
+       margin: auto;
+       margin-left: 5%;
+       font-family: 'Open Sans', sans-serif;
+       font-size: 2em;
+       letter-spacing: 10px;
+    }
+    .submit{
+        margin: auto;
+        text-align: center;
+        margin-right: 5%;
+        font-size: 1.5em;
+        border-radius: 100px;
+        width:20%;
+        height: 40%;
+        background-color: deepskyblue;
+        border: none;
+    }
+    .remove{
+        margin: auto;
+        text-align: center;
+        margin-right: 5%;
+        border-radius: 100px;
+        width:20%;
+        font-size: 1.5em;
+        height: 40%;
+        background-color: firebrick;
+        border: none;
+    }
+    .float{
+        background-color: #00000000;
+        color: deepskyblue;
+        border: none;
+        display: block;
+        position: relative;
+        font-size: 1.5em;
+        width: 10%;
+        height: 80%;
+        margin: auto;
+        text-align: center;
+        font-family: monospace;
+    }
+    .float_container{
+        background-color:coral;
+        border-radius: 100px;
+        border: none;
+        width: 11em;
+        height: 4.3em;
+        position:fixed;
+        display: flex;
+        justify-content: center;
+        left: 77%;
+        top:90%;
+        z-index: 2;
+    }
+    @media screen and (min-width: 1330px) {
+    .body {
+        width: 40%;
+        border-radius: 20px;
+        height: 100vh;
+    }
+    .valve{
+        width: 15em;
+        height: 15em;
+    }
+    
+    }
+    @media screen and (max-width: 800px) {
+    .body {
+        width: 40%;
+        border-radius: 20px;
+        height: 100vh;
+    }
+    .valve{
+        width: 15em;
+        height: 15em;
+    }
+
+    
+    }
+    
+    @media screen and (min-width: 1700px) {
+    .body {
+        width: 30%;
+        border-radius: 20px;
+        height: 100vh;
+    }
+    .valve{
+        width: 12em;
+        height: 12em;
+    }
+    .list{
+        height: 7em;
+    }
+    .float_container{
+        left: 75%;
+        top:5%;
+    }
+    .float{
+        font-size: 1.5em;
+        width: 55%;
+    }
+    }
+   
+</style>
+<body style="background-color: #000;display:flex;justify-content: center;">
+    <div class="body">
+            <div class="float_container" id="reset">
+                <button class="reset" style="font-size:2em;height:80%;width:80%;margin-top:auto;margin-bottom:auto;background-color:#00000000;border:none;color:#000">Reset</button>
+            </div>
+            <div class="Horizontal" id="valve" style="margin-top: 20%;">
+            <button1 class="valve" id="valve1"></button1>
+            <button2 class="valve" id="valve2"></button2>
+            </div>
+            <div class="Horizontal" style="padding: 0%;border: none;">
+                <input class="float" id="Sprnk" maxlength="2" value="0"></input>
+                <input class="float" id="Drip" maxlength="2" value="0"></input>
+            </div>
+            <h1 class="float" id ="update">0</h1>
+            <div class="Horizontal" style="margin-top: 0%;border: none;">
+                <h1 style="color:white;font-family: monospace;font-size: 1.5em;">Minutes</h1>
+                <h1 style="color:white;font-family: monospace;font-size: 1.5em;">Minutes</h1>
+            </div>
+            <div class="Vertical">
+                <div class="list">
+                <input class ="list_item" type="time" id="time" name="time" style="background-color:#222;border:none; width:25%;height:50%;font-size:1.5em;color: cornsilk;">
+                <button class="submit">Set</button>
+            </div>
+               
+        </div>
+    </div>
+   
+
+
+
+</body>
